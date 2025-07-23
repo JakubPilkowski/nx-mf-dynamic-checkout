@@ -1,0 +1,44 @@
+name: Base CI
+
+on:
+  workflow_call:
+    inputs:
+      start-method:
+        description: 'Method to start the workflow'
+        required: true
+        type: string
+        default: 'default'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      # Cache node_modules
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run lint, test, and build
+        run: npx nx run-many -t lint test build --project=checkout
+      
+      - name: Fix CI issues
+        if: always()
+        run: npx nx fix-ci
+
+      - name: Start method
+        run: echo "Starting with method: ${{ inputs.start-method }}" 
